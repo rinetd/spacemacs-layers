@@ -5,7 +5,6 @@
    dotspacemacs-configuration-layers
    '(
      (auto-completion :variables
-
                       auto-completion-enable-sort-by-usage t)
      spacemacs-ivy
      erc
@@ -32,6 +31,9 @@
      osx
      javascript
      react
+     (colors :variables
+             colors-enable-rainbow-identifiers t )
+
      finance
      evil-commentary
      (elfeed :variables
@@ -48,13 +50,10 @@
      ;;xkcd
      ;;typing-games
      ;;org-ipython
-
-     ;;notmuch
      ;;stack-exchange
      ;; play with
      ;;evernote
-     ;;fasd
-
+     fasd
      spotify
      ;; Personal Layers
      pelm-org
