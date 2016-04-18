@@ -1,13 +1,20 @@
 (defun dotspacemacs/layers ()
   (setq-default
    dotspacemacs-distribution 'spacemacs
+   dotspacemacs-enable-lazy-installation t
    dotspacemacs-configuration-layer-path '("~/.spacemacs.d/")
    dotspacemacs-configuration-layers
    '(
+     octave
+     ruby
+     sql
+     vimscript
      (auto-completion :variables
                       auto-completion-enable-sort-by-usage t)
      spacemacs-ivy
      erc
+     vinegar
+   ;;  twitter
      emacs-lisp
      plantuml
      (org :variables
@@ -18,11 +25,12 @@
      markdown
      yaml
      (ibuffer :variables ibuffer-group-buffers-by nil)
-     (clojure
-      :variables clojure-enable-fancify-symbols t)
+     ;; (clojure
+     ;;  :variables clojure-enable-fancify-symbols t)
 
      (shell :variables
-            shell-default-shell 'eshell
+            shell-default-term-shell "/usr/local/bin/zsh"
+            shell-default-shell 'multiterm
             shell-default-height 30
             shell-default-position 'bottom)
      shell-scripts
@@ -30,12 +38,18 @@
      version-control
      osx
      javascript
+     java
+     scala
+     swift
+     (python :variables
+             python-enable-yapf-format-on-save t)
      react
+
+     evil-commentary
      (colors :variables
-             colors-enable-rainbow-identifiers t )
+             colors-enable-rainbow-identifiers nil )
 
      finance
-     evil-commentary
      (elfeed :variables
              url-queue-timeout 30
              elfeed-enable-web-interface nil
@@ -46,15 +60,15 @@
      (mu4e :variables
            mu4e-account-alist t
            mu4e-installation-path "/usr/local/Cellar/mu/HEAD/share/emacs/site-lisp/mu/mu4e")
-
+     fasd
+     imenu-list
+     ;;; just for fun
      ;;xkcd
      ;;typing-games
      ;;org-ipython
      ;;stack-exchange
      ;; play with
      ;;evernote
-     fasd
-     spotify
      ;; Personal Layers
      pelm-org
      pelm-blog
@@ -62,12 +76,20 @@
      pelm-ibuffer
      pelm-erc
      pelm-mail
+     pelm-kotlin
+     ;;pelm-slack
           )
 
-   dotspacemacs-additional-packages '(key-chord ox-reveal nameless elfeed-org groovy-mode keyfreq)
+   dotspacemacs-additional-packages '(key-chord ox-reveal nameless elfeed-org groovy-mode keyfreq org-clock-convenience buttercup)
 
    dotspacemacs-excluded-packages '(julia-mode  toc-org )
-   dotspacemacs-delete-orphan-packages t))
+   dotspacemacs-delete-orphan-packages t)
+
+  ;; (when
+  ;;     (spacemacs/system-is-mac)
+  ;;   (append dotspacemacs-configuration-layers '(spotify)))
+
+  )
 
 (defun dotspacemacs/init ()
   (setq-default
@@ -82,11 +104,11 @@
    dotspacemacs-scratch-mode 'text-mode
    dotspacemacs-themes '(monokai spacemacs-dark  spacemacs-light)
    dotspacemacs-colorize-cursor-according-to-state t
-   dotspacemacs-default-font '("Source Code Pro"
+   dotspacemacs-default-font '("PragmataPro"
                                :size 18
                                :weight normal
                                :width normal
-                               :powerline-scale 1.1)
+                               :powerline-scale 1.2)
    dotspacemacs-leader-key "SPC"
    dotspacemacs-emacs-leader-key "M-m"
    dotspacemacs-major-mode-leader-key ","
@@ -99,7 +121,6 @@
    dotspacemacs-auto-resume-layouts nil
    dotspacemacs-auto-save-file-location 'cache
    dotspacemacs-max-rollback-slots 10
-   dotspacemacs-use-ido nil
    dotspacemacs-helm-resize nil
    dotspacemacs-helm-no-header nil
    dotspacemacs-helm-position 'bottom
@@ -124,6 +145,9 @@
 
 (defun dotspacemacs/user-init ()
   (setq-default
+
+   ;; remove the 4m from shell
+   system-uses-terminfo nil
 
    ;; Miscellaneous
    vc-follow-symlinks t
@@ -160,13 +184,19 @@
 
    ;; Magit
    magit-popup-show-common-commands nil
-   git-magit-status-fullscreen t
+   git-magit-status-fullscreen nil
+   magit-refresh-status-buffer t
+   magit-commit-show-diff nil
+   magit-revert-buffers t
 
    magit-repository-directories '(
+                                  "~/.emacs.d/"
+                                  "~/src/geek/Androidorg/"
                                   "~/.spacemacs.d/"
                                   "~/src/work/pacer_android/"
                                   "~/src/work/pacer_groups/"
                                   "~/src/work/mandian_server/"
+                                  "~/src/personal/yep8.org/"
                                   "~/.zprezto/"
                                   )
 
@@ -222,10 +252,13 @@
    ;; IRC
    erc-autojoin-channels-alist
    '(
-     ("1\\.0\\.0" "#syl20bnr/spacemacs" "#eggcaker/emacs-hubot")
-     ("irc.gitter.im" "#syl20bnr/spacemacs" "#eggcaker/emacs-hubot")
+     ;;("1\\.0\\.0" "#syl20bnr/spacemacs" "#eggcaker/emacs-hubot")
+     ;;("irc.gitter.im" "#syl20bnr/spacemacs" "#eggcaker/emacs-hubot")
+     ("irc.gitter.im"  "#eggcaker/emacs-hubot")
      ;;("localhost" "#动动健身" "#动动大集合")
-     ("freenode\\.net" "#org-mode"))
+     ;; ("freenode\\.net" "#org-mode")
+     )
+
 
    ;; Theme modifications
    theming-modifications
@@ -276,10 +309,19 @@
       (term :foreground nil :background nil)))))
 
 (defun dotspacemacs/user-config ()
+
+  (setq eclim-eclipse-dirs "/Applications/Eclipse.app/Contents/Eclipse"
+        eclim-executable "/Applications/Eclipse.app/Contents/Eclipse/eclim")
+
   (global-git-commit-mode t)
   (push '(baidu
           :name "Baidu - 百度"
           :url "https://www.baidu.com/s?wd=%s")
+        search-engine-alist)
+
+  (push '(ciba
+          :name "iCIBA - 词霸"
+          :url "http://iciba.com/%s")
         search-engine-alist)
 
   (defun set-font (english chinese english-size chinese-size)
@@ -290,12 +332,11 @@
       (set-fontset-font
        (frame-parameter nil 'font) charset (font-spec :family chinese :size
                                                       chinese-size))))
-
   (when (spacemacs/system-is-mac)
-    (set-font "Source Code Pro" "Hiragino Sans GB" 18 22))
+    (set-font "PragmataPro" "Source Han Sans SC" 18 20))
 
   (when (spacemacs/system-is-linux)
-    (spacemacs//set-monospaced-font "Source Code Pro" "Droid Sans Fallback" 18 22))
+    (set-font "Source Code Pro" "Droid Sans Fallback" 18 20))
 
 
   (defun pelm/node-eval ()
@@ -332,8 +373,13 @@
    truncate-lines t
    company-idle-delay 0.0
    tab-width 2
-   js2-basic-offset 2
+      js2-basic-offset 2
    css-indent-offset 2)
+
+  (add-hook 'java-mode-hook (lambda ()
+                              (setq c-basic-offset 2
+                                    tab-width 2
+                                    indent-tabs-mode t)))
 
   (global-company-mode)
   (turn-off-show-smartparens-mode)
@@ -355,6 +401,7 @@
     (setq js2-include-browser-externs t)
     (setq js2-include-global-externs t)
 
+    (setq display-time-mode t)
     (setq-default line-spacing 10)
     ;;(setq org-bullets-bullet-list '("☯" "☰" "☱" "☲" "☳" "☴" "☵" "☶" "☷" ))
     (setq org-bullets-bullet-list '("✙" "♱" "♰" "☥" "✞" "✟" "✝" "†" "✠" "✚" "✜" "✛" "✢" "✣" "✤" "✥"))
@@ -389,6 +436,14 @@
       ;;(erc :server "localhost" :port "6667" :nick "eggcaker" :password "" :full-name "eggcaker") ;; local irc
       )
 
+    ;; slack
+    ;; (slack-register-team
+    ;;  :name "Yep8"
+    ;;  :default t
+    ;;  :client-id pelm/slack-client-id
+    ;;  :client-secret pelm/slack-client-secret
+    ;;  :token pelm/slack-token
+    ;;  :subscribed-channels '(review general))
 
     (defun pelm-shell/describe-random-interactive-function ()
       (interactive)
@@ -416,9 +471,42 @@ Consider only documented, non-obsolete functions."
    (keyfreq-mode 1)
    (keyfreq-autosave-mode 1)
 
+   (require 'org-clock-convenience)
+
+   (defun dfeich/org-agenda-mode-fn ()
+     (define-key org-agenda-mode-map
+       (kbd "<S-up>") #'org-clock-convenience-timestamp-up)
+     (define-key org-agenda-mode-map
+       (kbd "<S-down>") #'org-clock-convenience-timestamp-down)
+     (define-key org-agenda-mode-map
+       (kbd "o") #'org-clock-convenience-fill-gap))
+   (add-hook 'org-agenda-mode-hook #'dfeich/org-agenda-mode-fn)
+
+
     ;; Load local
     (when (file-exists-p "~/.local.el")
-      (load "~/.local.el")))
+      (load "~/.local.el"))
+
+    ;; Load temporary test code if exist
+    (when (file-exists-p "~/Desktop/test.el")
+      (load "~/Desktop/test.el"))
+
+    )
 
 ;; Do not write anything past this comment. This is where Emacs will
 ;; auto-generate custom variable definitions.
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(org-agenda-files
+   (quote
+    ("/Users/eggcaker/.org-files/bookmarks.org" "/Users/eggcaker/.org-files/books.org" "/Users/eggcaker/.org-files/business.org" "/Users/eggcaker/.org-files/contacts.org" "/Users/eggcaker/.org-files/emacs.org" "/Users/eggcaker/.org-files/geek.org" "/Users/eggcaker/.org-files/google.org" "/Users/eggcaker/.org-files/habits.org" "/Users/eggcaker/.org-files/mobileorg.org" "/Users/eggcaker/.org-files/notes.org" "/Users/eggcaker/.org-files/personal.org" "/Users/eggcaker/.org-files/refile.org" "/Users/eggcaker/.org-files/work.org"))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(company-tooltip-common ((t (:inherit company-tooltip :weight bold :underline nil))))
+ '(company-tooltip-common-selection ((t (:inherit company-tooltip-selection :weight bold :underline nil)))))

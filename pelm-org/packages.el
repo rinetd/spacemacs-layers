@@ -21,7 +21,6 @@
       (org-ac/config-default))))
 
 (defun pelm-org/post-init-org ()
-  ;;   "Initialize my package"
   (use-package org
     :mode ("\\.\\(org\\|org_archive\\|txt\\)$" . org-mode)
     :defer t
@@ -65,20 +64,50 @@
     (progn
 
       ;; start of test code
+      ;;TODO:  easy clock-in code should be play with
+      ;;       (defmacro pelm-org/org-with-current-task (&rest body)
+      ;;         "Execute BODY with the point at the subtree of the current task."
+      ;;         `(if (derived-mode-p 'org-agenda-mode)
+      ;;              (save-window-excursion
+      ;;                (org-agenda-switch-to)
+      ;;                ,@body)
+      ;;            ,@body))
+
+      ;;       (defun pelm-org/org-clock-in-and-track ()
+      ;;         "Start the clock running. Clock into Quantified Awesome."
+      ;;         (interactive)
+      ;;         (pelm-org/org-with-current-task
+      ;;          (org-clock-in)
+      ;;          (when (org-entry-get (point) "AUTO")
+      ;;            (org-open-link-from-string (org-entry-get (point) "AUTO")))))
+
+      ;;       (bind-key "!" 'my/org-clock-in-and-track org-agenda-mode-map)
+
+      ;;       (defun pelm-org/org-quick-clock-in-task (location jump)
+      ;;         "Track and clock in on the specified task.
+      ;; If JUMP is non-nil or the function is called with the prefix argument, jump to that location afterwards."
+      ;;         (interactive)
+      ;;         (when location
+      ;;           (if jump
+      ;;               (progn (org-refile 4 nil location) (pelm-org/org-clock-in-and-track))
+      ;;             (save-window-excursion
+      ;;               (org-refile 4 nil location)
+      ;;               (pelm-org/org-clock-in-and-track)))))
+      ;;       (bind-key "C-c q" 'pelm-org/org-quick-clock-in-task)
+
 
       ;; end of test code
 
-      (defun wicked/org-clock-in-if-starting ()
-        "Clock in when the task is marked STARTED."
-        (when (and (string= org-state "STARTED")
-                   (not (string= org-last-state org-state)))
-          (org-clock-in)))
-      (add-hook 'org-after-todo-state-change-hook
-                'wicked/org-clock-in-if-starting)
-      (defadvice org-clock-in (after wicked activate)
-        "Set this task's status to 'STARTED'."
-        (org-todo "STARTED"))
-      (defun wicked/org-clock-out-if-waiting ()
+      ;; (defvar pelm-org/organization-task-id "87043F9F-107D-4AF6-AAC1-D5C31455463A")
+
+      (defun pelm-org/place-agenda-tags ()
+        "Put the agenda tags by the right border of the agenda window."
+        (setq org-agenda-tags-column (- 2 (window-width)))
+        (org-agenda-align-tags))
+
+      (add-hook 'org-finalize-agenda-hook 'pelm-org/place-agenda-tags)
+
+      (defun pelm-org/org-clock-out-if-waiting ()
         "Clock out when the task is marked WAITING."
         (when (and (string= org-state "WAITING")
                    (equal (marker-buffer org-clock-marker) (current-buffer))
@@ -87,8 +116,7 @@
                       org-clock-marker)
                    (not (string= org-last-state org-state)))
           (org-clock-out)))
-      (add-hook 'org-after-todo-state-change-hook
-                'wicked/org-clock-out-if-waiting)
+      (add-hook 'org-after-todo-state-change-hook 'pelm-org/org-clock-out-if-waiting)
 
 
       ;; just for fun
@@ -310,7 +338,7 @@
                           "~/.org-files/books.org"
                           "~/.org-files/habits.org"
                           )
-       org-export-backends '(ascii beamer html latex md rss reveal)
+       org-export-backends '(ascii html md rss reveal icalendar)
        org-show-entry-below (quote ((default)))
        org-agenda-start-on-weekday 7
        org-startup-indented t
@@ -323,8 +351,8 @@
        org-startup-with-inline-images t
        org-src-fontify-natively t
        org-ellipsis "⤵"
-       org-ditaa-jar-path "~/.emacs.d/private/pelm-org/vendor/ditaa.jar"
-       org-plantuml-jar-path "~/.emacs.d/private/pelm-org/vendor/plantuml.jar"
+       org-ditaa-jar-path "~/.spacemacs.d/pelm-org/vendor/ditaa.jar"
+       org-plantuml-jar-path "~/.spacemacs.d/pelm-org/vendor/plantuml.jar"
        org-agenda-clockreport-parameter-plist (quote (:link t :maxlevel 5 :fileskip0 t :compact t :narrow 80))
 
        org-alphabetical-lists t
@@ -1318,7 +1346,7 @@ as the default task."
           ;;
           (save-restriction
             (widen)
-                                        ; Find the tags on the current task
+            ;; Find the tags on the current task
             (if (and (equal major-mode 'org-mode) (not (org-before-first-heading-p)) (eq arg 4))
                 (org-clock-in '(16))
               (pelm-org/clock-in-organization-task-as-default)))))
@@ -1329,11 +1357,6 @@ as the default task."
         (when (org-clock-is-active)
           (org-clock-out))
         (org-agenda-remove-restriction-lock))
-
-      (defun pelm-org/clock-in-default-task ()
-        (save-excursion
-          (org-with-point-at org-clock-default-task
-            (org-clock-in))))
 
       (defun pelm-org/clock-in-parent-task ()
         "Move point to the parent (project) task if any and clock in"
@@ -1351,10 +1374,12 @@ as the default task."
                   (pelm-org/clock-in-default-task)))))))
 
 
-      (defun pelm-clock-in-task-by-id (task-id)
-        (interactive)
-        (org-with-point-at (org-id-find task-id 'marker)
-          (org-clock-in '(16))))
+      (defun pelm-org/clock-in-task-by-id (id)
+        "Clock in a task by id"
+        (save-restriction
+          (widen)
+          (org-with-point-at (org-id-find id 'marker)
+            (org-clock-in '(16)))))
 
       (defun pelm-org/clock-out-maybe ()
         (when (and pelm-org/keep-clock-running
@@ -1515,7 +1540,7 @@ Callers of this function already widen the buffer view."
                ;;(python . t)
                ;;(ruby . t)
                ;;(scala . t)
-               (clojure . t)
+               ;;(clojure . t)
                (sh . t)
                (js . t)
                ;; (java . t)
@@ -1523,6 +1548,8 @@ Callers of this function already widen the buffer view."
                ;; (http . t)
                ;;(ipython . t)
                ;;(kotlin . t)
+               (sql . t)
+               (sqlite . t)
                (plantuml . t)
                ;;(latex . t)
                )))
